@@ -1,10 +1,11 @@
 import tkinter as tk
 from distutils.util import strtobool
 from functools import partial
+from tkinter import ttk
 
 import customtkinter as ctk
-from customtkinter import CTkEntry, CTkSwitch
-from src.common.common import file_read, read_config
+from customtkinter import CTkEntry, CTkFrame, CTkSwitch
+from src.common.common import csv_file_read, file_read, read_config
 
 FONT_TYPE = "meiryo"
 
@@ -41,6 +42,9 @@ class Application(ctk.CTk):
 
         # プログレスバーの配置
         self.progress_bar()
+
+        # タブ画面の配置
+        self.set_tab_view()
 
         # メイン画面の配置
         self.manual_property_area()
@@ -94,71 +98,123 @@ class Application(ctk.CTk):
             columnspan=3,
         )
 
-    def set_tab_view(self, frame: ctk.CTkFrame):
+    def set_tab_view(self):
         self.tab_view = ctk.CTkSegmentedButton(
-            frame,
+            self,
             values=["手動作成", "自動作成", "CSVインポート"],
-            command=None,
+            command=self.change_tab,
             font=self.fonts,
             dynamic_resizing=True,
         )
         self.tab_view.grid(
-            row=0, column=0, columnspan=4, padx=10, pady=10, sticky="nwe"
+            row=0, column=1, columnspan=3, padx=10, pady=10, sticky="nwe"
         )
 
         # デフォルト値をセット
         self.tab_view.set("手動作成")
 
-    def manual_property_area(self):
+    def manual_property_area(self) -> CTkFrame:
         # フレームの設定
-        _frame = ctk.CTkFrame(self)
-        _frame.grid(
-            row=0,
+        self.current_frame = ctk.CTkFrame(self)
+        self.current_frame.grid(
+            row=1,
             column=1,
             padx=10,
-            pady=(10, 0),
+            pady=(0, 50),
             rowspan=2,
-            columnspan=2,
-            sticky="nswe",
+            columnspan=3,
+            sticky="nwes",
         )
-
-        # タブの設置
-        self.set_tab_view(_frame)
 
         # メールデータ入力ラベル
         _eml_data_label_list = ["From：", "To：", "cc：", "件名：", "本文："]
 
         for index, eml_data_label in enumerate(_eml_data_label_list, start=1):
             # データラベル
-            _data_label = ctk.CTkLabel(_frame, text=eml_data_label, font=self.fonts)
-            _data_label.grid(row=index, column=0, padx=15, pady=(10, 0), sticky="e")
+            _data_label = ctk.CTkLabel(
+                self.current_frame, text=eml_data_label, font=self.fonts
+            )
+            _data_label.grid(row=index - 1, column=0, padx=15, pady=(10, 0), sticky="e")
 
             # データエントリー
-            _data_entry = ctk.CTkEntry(_frame, placeholder_text="", width=300)
-            _data_entry.grid(row=index, column=1, padx=15, pady=(10, 0), sticky="nsw")
+            _data_entry = ctk.CTkEntry(
+                self.current_frame, placeholder_text="", width=300
+            )
+            _data_entry.grid(
+                row=index - 1, column=1, padx=15, pady=(10, 0), sticky="we"
+            )
             self.data_entry_list.append(_data_entry)
 
             # 文字列自動生成チェックボックス
             _auto_switch = ctk.CTkSwitch(
-                _frame,
+                self.current_frame,
                 text="auto generate",
                 font=self.fonts,
                 onvalue="True",
                 offvalue="False",
                 command=partial(self.toggle_entry, index - 1),
             )
-            _auto_switch.grid(row=index, column=2, padx=15, pady=(10, 0), sticky="e")
+            _auto_switch.grid(
+                row=index - 1, column=2, padx=15, pady=(10, 0), sticky="w"
+            )
             self.auto_switch_list.append(_auto_switch)
 
         # ログ出力ボックス
-        _log_box = ctk.CTkTextbox(_frame, font=self.fonts, width=650)
-        _log_box.grid(row=6, column=0, columnspan=4, padx=10, pady=(10, 0), sticky="we")
+        _log_box = ctk.CTkTextbox(self.current_frame, font=self.fonts, width=650)
+        _log_box.grid(
+            row=5, column=0, columnspan=3, padx=20, pady=(10, 10), sticky="we"
+        )
+        _log_box.configure(state="disabled")
+
+    def import_property_area(self):
+        # フレームの設定
+        self.current_frame = ctk.CTkFrame(self)
+        self.current_frame.grid(
+            row=1,
+            column=1,
+            padx=10,
+            pady=(0, 50),
+            rowspan=2,
+            columnspan=3,
+            sticky="we",
+        )
+
+        # データラベル
+        _data_label = ctk.CTkLabel(
+            self.current_frame, text="csv import：", font=self.fonts
+        )
+        _data_label.grid(row=0, column=0, padx=15, pady=(20, 0), sticky="n")
+
+        # データエントリー
+        self.csv_path_entry = ctk.CTkEntry(
+            self.current_frame, placeholder_text="", width=350
+        )
+        self.csv_path_entry.grid(row=0, column=1, padx=15, pady=(20, 20), sticky="we")
+
+        # 文字列自動生成チェックボックス
+        _exit_button = ctk.CTkButton(
+            self.current_frame,
+            text="選択",
+            font=self.button_fonts,
+            command=self.csv_open_button,
+        )
+        _exit_button.grid(row=0, column=2, padx=15, pady=(20, 20), sticky="w")
+
+        # ボタン間のスペースを空けるために空のラベルを追加（オプション）
+        empty_label = ctk.CTkLabel(self.current_frame, text="", font=self.fonts)
+        empty_label.grid(row=1, column=0, padx=15, pady=(84, 0), sticky="nsw")
+
+        # ログ出力ボックス
+        _log_box = ctk.CTkTextbox(self.current_frame, font=self.fonts, width=650)
+        _log_box.grid(
+            row=2, column=0, columnspan=3, padx=20, pady=(15, 15), sticky="we"
+        )
         _log_box.configure(state="disabled")
 
     def export_dir(self):
         # 出力先ディレクトリ指定
         self.file_path_entry = ctk.CTkEntry(self, placeholder_text=" ./", width=570)
-        self.file_path_entry.grid(row=2, column=1, padx=10, pady=(15, 7), sticky="we")
+        self.file_path_entry.grid(row=2, column=1, padx=10, pady=(15, 6), sticky="swe")
 
         _file_path_button = ctk.CTkButton(
             self,
@@ -167,7 +223,7 @@ class Application(ctk.CTk):
             width=70,
             command=self.explorer_open_button,
         )
-        _file_path_button.grid(row=2, column=2, padx=10, pady=(15, 7))
+        _file_path_button.grid(row=2, column=2, padx=10, pady=(15, 6), sticky="swe")
 
     ############# コールバック関数 ######################
 
@@ -192,3 +248,35 @@ class Application(ctk.CTk):
 
         self.file_path_entry.delete(0, tk.END)
         self.file_path_entry.insert(0, file_name)
+
+    def csv_open_button(self):
+        """
+        ファイル選択ボタンが押された際にcsv選択ダイアログを表示する
+        """
+
+        file_name = csv_file_read()
+
+        if file_name is None:
+            return
+
+        self.csv_path_entry.delete(0, tk.END)
+        self.csv_path_entry.insert(0, file_name)
+
+    def change_tab(self, selected_value, from_button_callback=None):
+        """
+        セグメントボタンが選ばれたときに表示を切り替え
+
+        Args:
+            selected_value ([type]): [description]
+        """
+
+        self.current_frame.grid_forget()
+
+        if selected_value == "手動作成":
+            self.manual_property_area()
+
+        if selected_value == "自動作成":
+            self.manual_property_area()
+
+        if selected_value == "CSVインポート":
+            self.import_property_area()
