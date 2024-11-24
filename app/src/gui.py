@@ -6,6 +6,7 @@ from tkinter import ttk
 import customtkinter as ctk
 from customtkinter import CTkEntry, CTkFrame, CTkSwitch
 from src.common.common import csv_file_read, file_read, read_config
+from src.settings_window import ToplevelWindow
 
 FONT_TYPE = "meiryo"
 
@@ -67,15 +68,19 @@ class Application(ctk.CTk):
         _label.grid(row=0, column=0, padx=10, pady=15, sticky="ew")
 
         # EML自動作成画面遷移ボタン
-        option_button_list = ["ヘルプ", "設定"]
+        _option_button_help = ctk.CTkButton(
+            frame, text="ヘルプ", font=self.button_fonts
+        )
+        _option_button_help.grid(row=1, column=0, padx=15, pady=(15, 0), sticky="nsw")
 
-        for index, button_name in enumerate(option_button_list, start=1):
-            _option_button = ctk.CTkButton(
-                frame, text=button_name, font=self.button_fonts
-            )
-            _option_button.grid(
-                row=index, column=0, padx=15, pady=(15, 0), sticky="nsw"
-            )
+        _option_button_settings = ctk.CTkButton(
+            frame, text="設定", font=self.button_fonts, command=self.open_toplevel
+        )
+        _option_button_settings.grid(
+            row=2, column=0, padx=15, pady=(15, 0), sticky="nsw"
+        )
+
+        self.toplevel_window = None
 
         # ボタン間のスペースを空けるために空のラベルを追加（オプション）
         empty_label = ctk.CTkLabel(frame, text="", font=self.fonts)
@@ -101,7 +106,7 @@ class Application(ctk.CTk):
     def set_tab_view(self):
         self.tab_view = ctk.CTkSegmentedButton(
             self,
-            values=["手動作成", "自動作成", "CSVインポート"],
+            values=["手動作成", "CSVインポート"],
             command=self.change_tab,
             font=self.fonts,
             dynamic_resizing=True,
@@ -112,6 +117,10 @@ class Application(ctk.CTk):
 
         # デフォルト値をセット
         self.tab_view.set("手動作成")
+
+        # 各タブの画面を初期化しておく
+        self.manual_property_area()
+        self.import_property_area()
 
     def manual_property_area(self) -> CTkFrame:
         # フレームの設定
@@ -262,7 +271,7 @@ class Application(ctk.CTk):
         self.csv_path_entry.delete(0, tk.END)
         self.csv_path_entry.insert(0, file_name)
 
-    def change_tab(self, selected_value, from_button_callback=None):
+    def change_tab(self, selected_value: str, from_button_callback=None):
         """
         セグメントボタンが選ばれたときに表示を切り替え
 
@@ -280,3 +289,22 @@ class Application(ctk.CTk):
 
         if selected_value == "CSVインポート":
             self.import_property_area()
+
+    def open_toplevel(self):
+        """
+        設定画面の出現
+        """
+        if self.toplevel_window is None or not self.toplevel_window.winfo_exists():
+            self.toplevel_window = ToplevelWindow(self)
+
+            # ウィンドウが親ウィンドウの後ろに隠れないように設定
+            self.toplevel_window.after(100, self.raise_toplevel_window)
+        else:
+            self.toplevel_window.focus()
+
+    def raise_toplevel_window(self):
+        """
+        Toplevelウィンドウを最前面に移動させる
+        """
+        self.toplevel_window.lift()
+        self.toplevel_window.focus_force()
