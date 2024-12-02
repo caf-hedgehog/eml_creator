@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mark.js Highlight Example</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/mark.min.js"></script>
+</head>
+
+<body>
+
+    <p id="content">
+        ここに長いメールの本文が入ります。例えば「このメールには情報が含まれており、収集に役立つかもしれません。」や、「情報が収集される場合、注意が必要です。」という内容です。長すぎるときはハイライトされませんが、情報収集の距離が短い場合のみハイライトされます。
+        ここに長いメールの本文が入ります。例えば「このメールには情報が含まれており、収集に役立つかもしれません。」や、「情報が収集される場合、注意が必要です。」という内容です。情報あららららアンパンマンアンパンマンどっこいしょ収集
+    </p>
+
+    <script>
+        // メール本文を取得
+        const content = document.getElementById("content");
+
+        // 正規表現で「情報」と「収集」の間に最大10文字の文字列を抽出
+        const regex = /情報.{0,10}収集|収集.{0,10}情報/g;
+
+        // Mark.jsを使用して該当部分をハイライト
+        const instance = new Mark(content);
+
+        // メールのテキストを取得
+        const text = content.innerHTML;
+
+        // 正規表現にマッチする部分を抽出
+        const matches = text.match(regex);
+
+        console.log(matches)
+
+        instance.mark(matches, {
+            element: "span",
+            className: "highlight-info"
+        })
+
+        if (matches) {
+            matches.forEach(match => {
+                // 「情報」と「収集」の位置を検出
+                const infoIndex = match.indexOf("情報");
+                const collectIndex = match.indexOf("収集");
+
+                let distance;
+
+                // 次に、間の文字列部分（情報と収集の間）を別の色でハイライト（白色）
+                const betweenText = match.substring(infoIndex + 2, collectIndex);  // 「情報」と「収集」の間を抽出
+                console.log("=======")
+                console.log(betweenText)
+                console.log("=======")
+
+                instance.mark(betweenText, {
+                    element: "span",
+                    className: "highlight-between"
+                })
+
+            }
+            );
+        }
+    </script>
+
+    <style>
+        /* 情報と収集のハイライト用CSS */
+        .highlight-info {
+            background-color: yellow;
+            color: black;
+        }
+
+        /* 情報と収集の間の文字列のハイライト用CSS（白色） */
+        .highlight-between {
+            background-color: white;
+            color: black;
+            /* 文字が目立つように境界線をつける */
+        }
+    </style>
+
+</body>
+
+</html>
