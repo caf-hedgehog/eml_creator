@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mark.js Highlight Example</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/mark.min.js"></script>
+</head>
+
+<body>
+
+    <p id="content">
+        あいうえおパソコンあいうえおウンコあいうえおかきくけこさしすせそウンコだしてよパソコンあいうえおあいうえおパソコンあいうえおかきくけこさしすせそウンコ
+    </p>
+
+    <script>
+        // メール本文を取得
+        const content = document.getElementById("content");
+
+        // 正規表現で「情報」と「収集」の間に最大10文字の文字列を抽出
+        const regex = /パソコン.{0,10}ウンコ|ウンコ.{0,10}パソコン/g;
+
+        // Mark.jsを使用して該当部分をハイライト
+        const instance = new Mark(content);
+
+        // メールのテキストを取得
+        const text = content.innerHTML;
+
+        // 正規表現にマッチする部分を抽出
+        const matches = text.match(regex);
+
+        console.log(matches)
+
+        instance.mark(matches, {
+            element: "span",
+            className: "highlight-info"
+        })
+
+        if (matches) {
+            matches.forEach(match => {
+                // 「情報」と「収集」の位置を検出
+                const infoIndex = match.indexOf("パソコン");
+                const collectIndex = match.indexOf("ウンコ");
+
+                const infoIndex_len = "パソコン".length
+                const collectIndex_len = "ウンコ".length
+
+                if (infoIndex !== -1 && collectIndex !== -1) {
+                    const start = Math.min(infoIndex, collectIndex); // 「情報」や「収集」の位置を超える
+                    const end = Math.max(infoIndex, collectIndex);  // 最大の位置まで
+
+                    const match_length = match.length
+
+                    // 最後に来るキーワードの長さを算出
+                    const end_length = match_length - end
+                    let start_num = 0
+
+                    // 最初に来るキーワードの長さを算出
+                    if (end_length == infoIndex_len) {
+                        console.log("w")
+                        start_num += collectIndex_len
+                    }
+
+                    if (end_length == collectIndex_len) {
+                        start_num += infoIndex_len
+                    }
+
+                    betweenText = match.substring(start + start_num, end); // 最小値と最大値で間の文字列を抽出
+
+                    console.log("=======")
+                    console.log(match)
+                    console.log(start_num)
+                    console.log("=======")
+
+                    instance.mark(betweenText, {
+                        element: "span",
+                        className: "highlight-between"
+                    })
+                }
+            }
+            );
+        }
+    </script>
+
+    <style>
+        /* 情報と収集のハイライト用CSS */
+        .highlight-info {
+            background-color: yellow;
+            color: black;
+        }
+
+        /* 情報と収集の間の文字列のハイライト用CSS（白色） */
+        .highlight-between {
+            background-color: white;
+            color: black;
+            /* 文字が目立つように境界線をつける */
+        }
+    </style>
+
+</body>
+
+</html>
